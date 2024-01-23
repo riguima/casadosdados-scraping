@@ -19,10 +19,11 @@ class MainWindow(QtWidgets.QWidget):
         self.message_box = QtWidgets.QMessageBox()
 
         self.cnae_label = QtWidgets.QLabel('CNAE: ')
-        self.cnae_input = QtWidgets.QLineEdit()
+        self.cnae_combobox = QtWidgets.QComboBox()
+        self.cnae_combobox.addItems(self.browser.get_cnaes())
         self.cnae_layout = QtWidgets.QHBoxLayout()
         self.cnae_layout.addWidget(self.cnae_label)
-        self.cnae_layout.addWidget(self.cnae_input)
+        self.cnae_layout.addWidget(self.cnae_combobox)
 
         self.state_label = QtWidgets.QLabel('Estado: ')
         self.state_combobox = QtWidgets.QComboBox()
@@ -32,12 +33,13 @@ class MainWindow(QtWidgets.QWidget):
         self.state_layout.addWidget(self.state_combobox)
 
         self.city_label = QtWidgets.QLabel('Cidade: ')
-        self.city_combobox = QtWidgets.QLineEdit()
+        self.city_combobox = QtWidgets.QComboBox()
         self.city_layout = QtWidgets.QHBoxLayout()
         self.city_layout.addWidget(self.city_label)
         self.city_layout.addWidget(self.city_combobox)
 
         self.state_combobox.currentTextChanged.connect(self.update_cities)
+        self.update_cities()
 
         self.destination_folder_label = QtWidgets.QLabel('Pasta destino:')
         self.destination_folder_input = QtWidgets.QLineEdit()
@@ -66,7 +68,9 @@ class MainWindow(QtWidgets.QWidget):
 
     def update_cities(self):
         self.city_combobox.clear()
-        self.city_combobox.addItems(self.browser.get_cities(self.state_combobox.currentText()))
+        self.city_combobox.addItems(
+            self.browser.get_cities(self.state_combobox.currentText())
+        )
 
     @QtCore.Slot()
     def choose_destination_folder(self):
@@ -83,7 +87,7 @@ class MainWindow(QtWidgets.QWidget):
         self.message_box.show()
         self.message_box.setText('Gerando planilha...')
         cnaes, state, city = (
-            self.cnae_input.text(),
+            self.cnae_combobox.currentText(),
             self.state_combobox.currentText(),
             self.city_combobox.currentText(),
         )

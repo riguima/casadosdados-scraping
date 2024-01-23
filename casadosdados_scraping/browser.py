@@ -1,33 +1,76 @@
 import re
+from functools import cache
 from time import sleep
 
+import undetected_chromedriver as uc
 from httpx import Client
-from selenium.webdriver import Chrome
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
-from webdriver_manager.chrome import ChromeDriverManager
 
 
 class Browser:
     def __init__(self, headless=False):
-        options = Options()
-        if headless:
-            options.add_argument('--headless')
-            options.add_argument('--no-sandbox')
-        self.driver = Chrome(
-            options=options, service=Service(ChromeDriverManager().install())
-        )
+        self.driver = uc.Chrome(headless=headless, use_subprocess=False)
+
+    def get_cnaes(self):
+        url = 'https://casadosdados.com.br/solucao/cnpj/pesquisa-avancada'
+        if self.driver.current_url != url:
+            self.driver.get(url)
+        self.find_elements('.input.is-is-normal')[1].click()
+        dropdown_menu = self.find_elements('.dropdown-menu')[1]
+        while True:
+            result = [
+                item.text
+                for item in self.find_elements(
+                    '.dropdown-item', element=dropdown_menu
+                )
+            ]
+            if '' not in result:
+                break
+        return result
 
     def get_states(self):
-        return []
+        url = 'https://casadosdados.com.br/solucao/cnpj/pesquisa-avancada'
+        if self.driver.current_url != url:
+            self.driver.get(url)
+        self.find_elements('.input.is-is-normal')[3].click()
+        dropdown_menu = self.find_elements('.dropdown-menu')[3]
+        while True:
+            result = [
+                item.text
+                for item in self.find_elements(
+                    '.dropdown-item', element=dropdown_menu
+                )
+            ]
+            if '' not in result:
+                break
+        return result
+
+    @cache
+    def get_cities(self, state):
+        index = self.get_states().index(state)
+        dropdown_menu = self.find_elements('.dropdown-menu')[3]
+        self.find_elements('.dropdown-item', element=dropdown_menu)[
+            index
+        ].click()
+        self.find_element('.input.is-normal').click()
+        dropdown_menu = self.find_elements('.dropdown-menu')[4]
+        while True:
+            result = [
+                item.text.title()
+                for item in self.find_elements(
+                    '.dropdown-item', element=dropdown_menu
+                )
+            ]
+            if '' not in result:
+                break
+        return result
 
     def search(self, search_info):
-        self.driver.get(
-            'https://casadosdados.com.br/solucao/cnpj/pesquisa-avancada'
-        )
+        url = 'https://casadosdados.com.br/solucao/cnpj/pesquisa-avancada'
+        if self.driver.current_url != url:
+            self.driver.get(url)
         menus = self.find_elements('.dropdown-menu')
         self.find_element('.is-4 .input.is-normal').send_keys(
             search_info['cnae']

@@ -12,6 +12,7 @@ pyside6 = "*"
 httpx = "*"
 openpyxl = "*"
 pyarrow = "*"
+undetected-chromedriver = "*"
 
 [dev-packages]
 ruff = "*"
