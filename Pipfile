@@ -1,0 +1,22 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+pandas = "*"
+selenium = "*"
+webdriver-manager = "*"
+qt-material = "*"
+pyside6 = "*"
+httpx = "*"
+openpyxl = "*"
+pyarrow = "*"
+
+[dev-packages]
+ruff = "*"
+isort = "*"
+blue = "*"
+
+[requires]
+python_version = "3.11"
