@@ -116,7 +116,6 @@ class Browser:
             result = {}
             for info in selector.css('.is-narrow'):
                 try:
-                    print(info.css('p::text').get(), info.css('a::text').get())
                     if info.css('a'):
                         result[info.css('p::text').get()] = info.css('a::text').get()
                     else:
