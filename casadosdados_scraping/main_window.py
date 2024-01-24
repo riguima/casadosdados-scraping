@@ -84,10 +84,10 @@ class MainWindow(QtWidgets.QWidget):
 
     @QtCore.Slot()
     def generate_worksheet(self) -> None:
-        self.message_box.show()
         self.message_box.setText('Gerando planilha...')
-        cnaes, state, city = (
-            self.cnae_combobox.currentText(),
+        self.message_box.show()
+        cnae, state, city = (
+            self.cnae_combobox.currentText().split(' - ')[0],
             self.state_combobox.currentText(),
             self.city_combobox.currentText(),
         )
@@ -95,10 +95,7 @@ class MainWindow(QtWidgets.QWidget):
         path = str(
             Path(self.destination_folder_input.text()).absolute() / filename
         )
-        contacts = []
-        for cnae in cnaes.split():
-            search_info = {'cnae': cnae, 'state': state, 'city': city}
-            self.browser.driver.delete_all_cookies()
-            contacts.extend(self.browser.search(search_info))
-        to_excel(path, contacts)
+        search_info = {'cnae': cnae, 'state': state, 'city': city}
+        to_excel(path, self.browser.search(search_info))
         self.message_box.setText('Concluido!')
+        self.message_box.show()

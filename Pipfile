@@ -13,6 +13,7 @@ httpx = "*"
 openpyxl = "*"
 pyarrow = "*"
 undetected-chromedriver = "*"
+parsel = "*"
 
 [dev-packages]
 ruff = "*"

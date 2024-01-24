@@ -1,9 +1,10 @@
-import re
 from functools import cache
 from time import sleep
 
 import undetected_chromedriver as uc
 from httpx import Client
+from parsel import Selector
+from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
@@ -14,9 +15,9 @@ class Browser:
         self.driver = uc.Chrome(headless=headless, use_subprocess=False)
 
     def get_cnaes(self):
-        url = 'https://casadosdados.com.br/solucao/cnpj/pesquisa-avancada'
-        if self.driver.current_url != url:
-            self.driver.get(url)
+        self.driver.get(
+            'https://casadosdados.com.br/solucao/cnpj/pesquisa-avancada'
+        )
         self.find_elements('.input.is-is-normal')[1].click()
         dropdown_menu = self.find_elements('.dropdown-menu')[1]
         while True:
@@ -31,9 +32,9 @@ class Browser:
         return result
 
     def get_states(self):
-        url = 'https://casadosdados.com.br/solucao/cnpj/pesquisa-avancada'
-        if self.driver.current_url != url:
-            self.driver.get(url)
+        self.driver.get(
+            'https://casadosdados.com.br/solucao/cnpj/pesquisa-avancada'
+        )
         self.find_elements('.input.is-is-normal')[3].click()
         dropdown_menu = self.find_elements('.dropdown-menu')[3]
         while True:
@@ -68,73 +69,68 @@ class Browser:
         return result
 
     def search(self, search_info):
-        url = 'https://casadosdados.com.br/solucao/cnpj/pesquisa-avancada'
-        if self.driver.current_url != url:
-            self.driver.get(url)
+        self.driver.get(
+            'https://casadosdados.com.br/solucao/cnpj/pesquisa-avancada'
+        )
         menus = self.find_elements('.dropdown-menu')
-        self.find_element('.is-4 .input.is-normal').send_keys(
+        self.find_elements('.input.is-is-normal')[1].send_keys(
             search_info['cnae']
         )
         self.click(self.find_element('.dropdown-item', element=menus[1]))
-        self.find_element('.is-2 .input.is-normal').send_keys(
+        self.find_elements('.input.is-is-normal')[3].send_keys(
             search_info['state']
         )
         self.click(self.find_element('.dropdown-item', element=menus[3]))
-        self.find_elements('.is-2 .input.is-normal')[1].send_keys(
-            search_info['city']
-        )
+        self.find_element('.input.is-normal').send_keys(search_info['city'])
         self.click(self.find_element('.dropdown-item', element=menus[4]))
-        self.find_element('input[placeholder="A partir de"]').send_keys(
-            '01/01/2019'
-        )
-        self.click(self.find_element('.check.is-default'))
-        self.click(self.find_element('.button'))
-        urls = []
-        while True:
-            sleep(2)
-            new_urls = [
-                e.get_attribute('href') for e in self.find_elements('.box a')
-            ]
-            urls.extend(new_urls)
-            disabled = self.find_elements('.pagination-next')[2].get_attribute(
-                'disabled'
-            )
-            if disabled is not None:
-                break
-            self.click(self.find_elements('.pagination-next')[2])
+        self.click(self.find_element('.button.is-success'))
+        urls = self.get_contacts_urls_of_page()
+        return [self.get_contact_info(url) for url in urls]
+
+    def get_contacts_urls_of_page(self):
         result = []
-        for url in urls:
-            print(url)
-            with Client() as client:
-                headers = {
-                    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.102 Safari/537.36'
-                }
-                content = str(client.get(url, headers=headers).content)
-            name_pattern = re.compile(r'razao_social:"(.+?)"', re.DOTALL)
-            phone_number_pattern = re.compile(
-                r'contato_telefonico:\[\{.+ddd:"(\d{2})",numero:"(\d+?)"',
-                re.DOTALL,
-            )
-            if not phone_number_pattern.findall(content):
-                phone_number_pattern = re.compile(
-                    r'contato_telefonico:\[\{.+completo:"(\d{2})-(\d+)"',
-                    re.DOTALL,
-                )
-            try:
-                ddd, number = phone_number_pattern.findall(content)[0]
-                name = name_pattern.findall(content)[0]
-            except IndexError:
-                continue
-            phone_number = int(f'{ddd}{number}')
-            result.append(
-                {
-                    'name': name,
-                    'phone_number': phone_number,
-                    'location': f'{search_info["city"]} - {search_info["state"]}',
-                    'cnae': search_info['cnae'],
-                }
-            )
+        try:
+            while True:
+                sleep(2)
+                urls = [
+                    e.get_attribute('href')
+                    for e in self.find_elements('.box a')
+                ]
+                result.extend(urls)
+                try:
+                    self.find_element('.pagination-next.is-disabled', wait=5)
+                except TimeoutException:
+                    self.click(self.find_elements('.pagination-next')[1])
+                    continue
+                break
+        except TimeoutException:
+            return result
         return result
+
+    def get_contact_info(self, url):
+        with Client() as client:
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.102 Safari/537.36'
+            }
+            selector = Selector(client.get(url, headers=headers).text)
+            result = {}
+            for info in selector.css('.is-narrow'):
+                try:
+                    print(info.css('p::text').get(), info.css('a::text').get())
+                    if info.css('a'):
+                        result[info.css('p::text').get()] = info.css('a::text').get()
+                    else:
+                        result[info.css('p::text').get()] = info.css('p::text')[1].get()
+                except IndexError:
+                    result[info.css('p::text').get()] = ''
+            result['Nome Fantasia'] = result.get('Nome Fantasia', '')
+            result['Telefone'] = result.get('Telefone', '')
+            result['Quadro Societário'] = result.get('Quadro Societário', '')
+            result['Atividades Secundárias'] = result.get(
+                'Atividades Secundárias', ''
+            )
+            result['URL'] = url
+            return result
 
     def find_element(self, selector, element=None, wait=20):
         element = element or self.driver
