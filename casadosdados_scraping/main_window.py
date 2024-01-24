@@ -1,6 +1,7 @@
+from datetime import datetime
 from pathlib import Path
 
-from PySide6 import QtCore, QtWidgets
+from PySide6 import QtCore, QtGui, QtWidgets
 
 from casadosdados_scraping.browser import Browser
 from casadosdados_scraping.utils import to_excel
@@ -12,34 +13,123 @@ class MainWindow(QtWidgets.QWidget):
         self.message_box = QtWidgets.QMessageBox()
         with open(Path('styles.qss').absolute(), 'r') as file:
             self.setStyleSheet(file.read())
-        self.setFixedSize(400, 250)
 
         self.browser = Browser(headless=False)
 
         self.message_box = QtWidgets.QMessageBox()
 
-        self.cnae_label = QtWidgets.QLabel('CNAE: ')
+        self.fantasy_name_label = QtWidgets.QLabel('Nome Fantasia:')
+        self.fantasy_name_input = QtWidgets.QLineEdit()
+        self.fantasy_name_layout = QtWidgets.QHBoxLayout()
+        self.fantasy_name_layout.addWidget(self.fantasy_name_label)
+        self.fantasy_name_layout.addWidget(self.fantasy_name_input)
+
+        self.juridical_nature_label = QtWidgets.QLabel('Natureza Jurídica:')
+        self.juridical_nature_combobox = QtWidgets.QComboBox()
+        self.juridical_nature_combobox.addItem('Todas')
+        self.juridical_nature_combobox.addItems(
+            self.browser.get_juridical_nature()
+        )
+        self.juridical_nature_layout = QtWidgets.QHBoxLayout()
+        self.juridical_nature_layout.addWidget(self.juridical_nature_label)
+        self.juridical_nature_layout.addWidget(self.juridical_nature_combobox)
+
+        self.registration_status_label = QtWidgets.QLabel('Situação Cadastral')
+        self.registration_status_combobox = QtWidgets.QComboBox()
+        self.registration_status_combobox.addItems(
+            ['Ativa', 'Baixada', 'Inapta', 'Suspensa', 'Nula']
+        )
+        self.registration_status_layout = QtWidgets.QHBoxLayout()
+        self.registration_status_layout.addWidget(
+            self.registration_status_label
+        )
+        self.registration_status_layout.addWidget(
+            self.registration_status_combobox
+        )
+
+        self.cnae_label = QtWidgets.QLabel('CNAE:')
         self.cnae_combobox = QtWidgets.QComboBox()
+        self.cnae_combobox.addItem('Todas')
         self.cnae_combobox.addItems(self.browser.get_cnaes())
         self.cnae_layout = QtWidgets.QHBoxLayout()
         self.cnae_layout.addWidget(self.cnae_label)
         self.cnae_layout.addWidget(self.cnae_combobox)
 
-        self.state_label = QtWidgets.QLabel('Estado: ')
+        self.state_label = QtWidgets.QLabel('Estado:')
         self.state_combobox = QtWidgets.QComboBox()
+        self.state_combobox.addItem('Todos')
         self.state_combobox.addItems(self.browser.get_states())
         self.state_layout = QtWidgets.QHBoxLayout()
         self.state_layout.addWidget(self.state_label)
         self.state_layout.addWidget(self.state_combobox)
 
-        self.city_label = QtWidgets.QLabel('Cidade: ')
+        self.city_label = QtWidgets.QLabel('Cidade:')
         self.city_combobox = QtWidgets.QComboBox()
         self.city_layout = QtWidgets.QHBoxLayout()
         self.city_layout.addWidget(self.city_label)
         self.city_layout.addWidget(self.city_combobox)
 
-        self.state_combobox.currentTextChanged.connect(self.update_cities)
-        self.update_cities()
+        self.state_combobox.currentTextChanged.connect(
+            self.update_city_combobox
+        )
+        self.update_city_combobox()
+
+        self.neighborhood_label = QtWidgets.QLabel('Bairro:')
+        self.neighborhood_input = QtWidgets.QLineEdit()
+        self.neighborhood_layout = QtWidgets.QHBoxLayout()
+        self.neighborhood_layout.addWidget(self.neighborhood_label)
+        self.neighborhood_layout.addWidget(self.neighborhood_input)
+
+        self.cep_label = QtWidgets.QLabel('CEP:')
+        self.cep_input = QtWidgets.QLineEdit()
+        self.cep_layout = QtWidgets.QHBoxLayout()
+        self.cep_layout.addWidget(self.cep_label)
+        self.cep_layout.addWidget(self.cep_input)
+
+        self.ddd_label = QtWidgets.QLabel('DDD:')
+        self.ddd_input = QtWidgets.QLineEdit()
+        self.ddd_input.setValidator(
+            QtGui.QRegularExpressionValidator(r'\d{2}')
+        )
+        self.ddd_layout = QtWidgets.QHBoxLayout()
+        self.ddd_layout.addWidget(self.ddd_label)
+        self.ddd_layout.addWidget(self.ddd_input)
+
+        self.from_opening_date_label = QtWidgets.QLabel('Data de Abertura (De)', alignment=QtCore.Qt.AlignmentFlag.AlignCenter)
+        self.from_opening_date_calendar = QtWidgets.QCalendarWidget()
+        self.from_opening_date_layout = QtWidgets.QVBoxLayout()
+        self.from_opening_date_layout.addWidget(self.from_opening_date_label)
+        self.from_opening_date_layout.addWidget(self.from_opening_date_calendar)
+
+        self.to_opening_date_label = QtWidgets.QLabel('Data de Abertura (Até)', alignment=QtCore.Qt.AlignmentFlag.AlignCenter)
+        self.to_opening_date_calendar = QtWidgets.QCalendarWidget()
+        self.to_opening_date_layout = QtWidgets.QVBoxLayout()
+        self.to_opening_date_layout.addWidget(self.to_opening_date_label)
+        self.to_opening_date_layout.addWidget(self.to_opening_date_calendar)
+
+        self.calendars_layout = QtWidgets.QHBoxLayout()
+        self.calendars_layout.addLayout(self.from_opening_date_layout)
+        self.calendars_layout.addLayout(self.to_opening_date_layout)
+
+        self.from_share_capital_label = QtWidgets.QLabel(
+            'Capital Social (De):'
+        )
+        self.from_share_capital_input = QtWidgets.QLineEdit()
+        self.from_share_capital_input.setValidator(
+            QtGui.QRegularExpressionValidator(r'\d+,\d{2}')
+        )
+        self.from_share_capital_layout = QtWidgets.QHBoxLayout()
+        self.from_share_capital_layout.addWidget(self.from_share_capital_label)
+        self.from_share_capital_layout.addWidget(self.from_share_capital_input)
+
+        self.to_share_capital_label = QtWidgets.QLabel('Capital Social (Até):')
+        self.to_share_capital_input = QtWidgets.QLineEdit()
+        self.to_share_capital_input.setValidator(
+            QtGui.QRegularExpressionValidator(r'\d+,\d{2}')
+        )
+        self.to_share_capital_layout = QtWidgets.QHBoxLayout()
+        self.to_share_capital_layout.addWidget(self.to_share_capital_label)
+        self.to_share_capital_layout.addWidget(self.to_share_capital_input)
 
         self.destination_folder_label = QtWidgets.QLabel('Pasta destino:')
         self.destination_folder_input = QtWidgets.QLineEdit()
@@ -48,6 +138,7 @@ class MainWindow(QtWidgets.QWidget):
             self.choose_destination_folder
         )
         self.destination_folder_layout = QtWidgets.QHBoxLayout()
+        self.destination_folder_layout.addWidget(self.destination_folder_label)
         self.destination_folder_layout.addWidget(self.destination_folder_input)
         self.destination_folder_layout.addWidget(
             self.destination_folder_button
@@ -58,19 +149,57 @@ class MainWindow(QtWidgets.QWidget):
         )
         self.generate_worksheet_button.clicked.connect(self.generate_worksheet)
 
-        self.main_layout = QtWidgets.QVBoxLayout(self)
-        self.main_layout.addLayout(self.cnae_layout)
-        self.main_layout.addLayout(self.state_layout)
-        self.main_layout.addLayout(self.city_layout)
-        self.main_layout.addWidget(self.destination_folder_label)
-        self.main_layout.addLayout(self.destination_folder_layout)
-        self.main_layout.addWidget(self.generate_worksheet_button)
+        self.inputs_layout = QtWidgets.QVBoxLayout()
+        self.inputs_layout.addLayout(self.fantasy_name_layout)
+        self.inputs_layout.addLayout(self.juridical_nature_layout)
+        self.inputs_layout.addLayout(self.registration_status_layout)
+        self.inputs_layout.addLayout(self.cnae_layout)
+        self.inputs_layout.addLayout(self.state_layout)
+        self.inputs_layout.addLayout(self.city_layout)
+        self.inputs_layout.addLayout(self.neighborhood_layout)
+        self.inputs_layout.addLayout(self.cep_layout)
+        self.inputs_layout.addLayout(self.ddd_layout)
+        self.inputs_layout.addLayout(self.calendars_layout)
+        self.inputs_layout.addLayout(self.from_share_capital_layout)
+        self.inputs_layout.addLayout(self.to_share_capital_layout)
+        self.inputs_layout.addLayout(self.destination_folder_layout)
+        self.inputs_layout.addWidget(self.generate_worksheet_button)
 
-    def update_cities(self):
+        self.options_label = QtWidgets.QLabel('Opções', alignment=QtCore.Qt.AlignmentFlag.AlignCenter)
+        self.only_mei_checkbox = QtWidgets.QCheckBox('Somente MEI')
+        self.remove_mei_checkbox = QtWidgets.QCheckBox('Excluir MEI')
+        self.only_matriz_checkbox = QtWidgets.QCheckBox('Somente Matriz')
+        self.only_filial = QtWidgets.QCheckBox('Somente Filial')
+        self.with_phone_number = QtWidgets.QCheckBox('Com Contato de Telefone')
+        self.only_phone = QtWidgets.QCheckBox('Somente Fixo')
+        self.only_smartphone = QtWidgets.QCheckBox('Somente Celular')
+        self.with_email = QtWidgets.QCheckBox('Com E-mail')
+
+        self.options_layout = QtWidgets.QVBoxLayout()
+        self.options_layout.addStretch()
+        self.options_layout.addWidget(self.options_label)
+        self.options_layout.addWidget(self.only_mei_checkbox)
+        self.options_layout.addWidget(self.remove_mei_checkbox)
+        self.options_layout.addWidget(self.only_matriz_checkbox)
+        self.options_layout.addWidget(self.only_filial)
+        self.options_layout.addWidget(self.with_phone_number)
+        self.options_layout.addWidget(self.only_phone)
+        self.options_layout.addWidget(self.only_smartphone)
+        self.options_layout.addWidget(self.with_email)
+        self.options_layout.addStretch()
+
+        self.main_layout = QtWidgets.QHBoxLayout(self)
+        self.main_layout.addLayout(self.inputs_layout)
+        self.main_layout.addLayout(self.options_layout)
+
+    @QtCore.Slot()
+    def update_city_combobox(self):
         self.city_combobox.clear()
-        self.city_combobox.addItems(
-            self.browser.get_cities(self.state_combobox.currentText())
-        )
+        self.city_combobox.addItem('Todas')
+        if self.state_combobox.currentText() != 'Todos':
+            self.city_combobox.addItems(
+                self.browser.get_cities(self.state_combobox.currentText())
+            )
 
     @QtCore.Slot()
     def choose_destination_folder(self):
@@ -86,16 +215,19 @@ class MainWindow(QtWidgets.QWidget):
     def generate_worksheet(self) -> None:
         self.message_box.setText('Gerando planilha...')
         self.message_box.show()
-        cnae, state, city = (
-            self.cnae_combobox.currentText().split(' - ')[0],
-            self.state_combobox.currentText(),
-            self.city_combobox.currentText(),
+        filename = (
+            f'search_result_{datetime.now().strftime("%d/%m/%Y %H:%M:%S")}'
         )
-        filename = f'{state}_{city}.xlsx'
         path = str(
             Path(self.destination_folder_input.text()).absolute() / filename
         )
-        search_info = {'cnae': cnae, 'state': state, 'city': city}
+        search_info = {
+            'fantasy_name': self.fantasy_name_input.text(),
+            'juridical_nature': self.jurif,
+            'cnae': self.cnae_combobox.currentText(),
+            'state': self.state_combobox.currentText(),
+            'city': self.city_combobox.currentText(),
+        }
         to_excel(path, self.browser.search(search_info))
         self.message_box.setText('Concluido!')
         self.message_box.show()

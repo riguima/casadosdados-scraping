@@ -2,6 +2,10 @@ QWidget {
   font-size: 20px;
 }
 
+QLabel {
+  font-weight: bold;
+}
+
 QMessageBox {
   font-size: 20px;
 }

@@ -15,53 +15,47 @@ class Browser:
         self.driver = uc.Chrome(headless=headless, use_subprocess=False)
 
     def get_cnaes(self):
-        self.driver.get(
-            'https://casadosdados.com.br/solucao/cnpj/pesquisa-avancada'
-        )
+        url = 'https://casadosdados.com.br/solucao/cnpj/pesquisa-avancada'
+        if url != self.driver.current_url:
+            self.driver.get(url)
         self.find_elements('.input.is-is-normal')[1].click()
-        dropdown_menu = self.find_elements('.dropdown-menu')[1]
-        while True:
-            result = [
-                item.text
-                for item in self.find_elements(
-                    '.dropdown-item', element=dropdown_menu
-                )
-            ]
-            if '' not in result:
-                break
-        return result
+        dropdown = self.find_elements('.dropdown-menu')[1]
+        return self.get_dropdown_items(dropdown)
+
+    def get_juridical_nature(self):
+        url = 'https://casadosdados.com.br/solucao/cnpj/pesquisa-avancada'
+        if url != self.driver.current_url:
+            self.driver.get(url)
+        self.find_elements('.input.is-is-normal')[2].click()
+        dropdown = self.find_elements('.dropdown-menu')[2]
+        return self.get_dropdown_items(dropdown)
 
     def get_states(self):
-        self.driver.get(
-            'https://casadosdados.com.br/solucao/cnpj/pesquisa-avancada'
-        )
+        url = 'https://casadosdados.com.br/solucao/cnpj/pesquisa-avancada'
+        if url != self.driver.current_url:
+            self.driver.get(url)
         self.find_elements('.input.is-is-normal')[3].click()
-        dropdown_menu = self.find_elements('.dropdown-menu')[3]
-        while True:
-            result = [
-                item.text
-                for item in self.find_elements(
-                    '.dropdown-item', element=dropdown_menu
-                )
-            ]
-            if '' not in result:
-                break
-        return result
+        dropdown = self.find_elements('.dropdown-menu')[3]
+        return self.get_dropdown_items(dropdown)
+
+    def select_state(self, state):
+        index = self.get_states().index(state)
+        dropdown = self.find_elements('.dropdown-menu')[3]
+        self.find_elements('.dropdown-item', element=dropdown)[index].click()
 
     @cache
     def get_cities(self, state):
-        index = self.get_states().index(state)
-        dropdown_menu = self.find_elements('.dropdown-menu')[3]
-        self.find_elements('.dropdown-item', element=dropdown_menu)[
-            index
-        ].click()
+        self.select_state(state)
         self.find_element('.input.is-normal').click()
-        dropdown_menu = self.find_elements('.dropdown-menu')[4]
+        dropdown = self.find_elements('.dropdown-menu')[4]
+        return self.get_dropdown_items(dropdown)
+
+    def get_dropdown_items(self, dropdown):
         while True:
             result = [
-                item.text.title()
+                item.text
                 for item in self.find_elements(
-                    '.dropdown-item', element=dropdown_menu
+                    '.dropdown-item', element=dropdown
                 )
             ]
             if '' not in result:
@@ -117,9 +111,13 @@ class Browser:
             for info in selector.css('.is-narrow'):
                 try:
                     if info.css('a'):
-                        result[info.css('p::text').get()] = info.css('a::text').get()
+                        result[info.css('p::text').get()] = info.css(
+                            'a::text'
+                        ).get()
                     else:
-                        result[info.css('p::text').get()] = info.css('p::text')[1].get()
+                        result[info.css('p::text').get()] = info.css(
+                            'p::text'
+                        )[1].get()
                 except IndexError:
                     result[info.css('p::text').get()] = ''
             result['Nome Fantasia'] = result.get('Nome Fantasia', '')
