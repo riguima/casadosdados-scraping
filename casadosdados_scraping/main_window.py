@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, date
 from pathlib import Path
 
 from PySide6 import QtCore, QtGui, QtWidgets
@@ -24,6 +24,14 @@ class MainWindow(QtWidgets.QWidget):
         self.fantasy_name_layout.addWidget(self.fantasy_name_label)
         self.fantasy_name_layout.addWidget(self.fantasy_name_input)
 
+        self.cnae_label = QtWidgets.QLabel('CNAE:')
+        self.cnae_combobox = QtWidgets.QComboBox()
+        self.cnae_combobox.addItem('Todas')
+        self.cnae_combobox.addItems(self.browser.get_cnaes())
+        self.cnae_layout = QtWidgets.QHBoxLayout()
+        self.cnae_layout.addWidget(self.cnae_label)
+        self.cnae_layout.addWidget(self.cnae_combobox)
+
         self.juridical_nature_label = QtWidgets.QLabel('Natureza Jurídica:')
         self.juridical_nature_combobox = QtWidgets.QComboBox()
         self.juridical_nature_combobox.addItem('Todas')
@@ -46,14 +54,6 @@ class MainWindow(QtWidgets.QWidget):
         self.registration_status_layout.addWidget(
             self.registration_status_combobox
         )
-
-        self.cnae_label = QtWidgets.QLabel('CNAE:')
-        self.cnae_combobox = QtWidgets.QComboBox()
-        self.cnae_combobox.addItem('Todas')
-        self.cnae_combobox.addItems(self.browser.get_cnaes())
-        self.cnae_layout = QtWidgets.QHBoxLayout()
-        self.cnae_layout.addWidget(self.cnae_label)
-        self.cnae_layout.addWidget(self.cnae_combobox)
 
         self.state_label = QtWidgets.QLabel('Estado:')
         self.state_combobox = QtWidgets.QComboBox()
@@ -151,9 +151,9 @@ class MainWindow(QtWidgets.QWidget):
 
         self.inputs_layout = QtWidgets.QVBoxLayout()
         self.inputs_layout.addLayout(self.fantasy_name_layout)
+        self.inputs_layout.addLayout(self.cnae_layout)
         self.inputs_layout.addLayout(self.juridical_nature_layout)
         self.inputs_layout.addLayout(self.registration_status_layout)
-        self.inputs_layout.addLayout(self.cnae_layout)
         self.inputs_layout.addLayout(self.state_layout)
         self.inputs_layout.addLayout(self.city_layout)
         self.inputs_layout.addLayout(self.neighborhood_layout)
@@ -166,14 +166,15 @@ class MainWindow(QtWidgets.QWidget):
         self.inputs_layout.addWidget(self.generate_worksheet_button)
 
         self.options_label = QtWidgets.QLabel('Opções', alignment=QtCore.Qt.AlignmentFlag.AlignCenter)
+        self.includes_secondary_activity = QtWidgets.QCheckBox('Incluir Atividade Secundária')
         self.only_mei_checkbox = QtWidgets.QCheckBox('Somente MEI')
         self.remove_mei_checkbox = QtWidgets.QCheckBox('Excluir MEI')
         self.only_matriz_checkbox = QtWidgets.QCheckBox('Somente Matriz')
-        self.only_filial = QtWidgets.QCheckBox('Somente Filial')
-        self.with_phone_number = QtWidgets.QCheckBox('Com Contato de Telefone')
-        self.only_phone = QtWidgets.QCheckBox('Somente Fixo')
-        self.only_smartphone = QtWidgets.QCheckBox('Somente Celular')
-        self.with_email = QtWidgets.QCheckBox('Com E-mail')
+        self.only_filial_checkbox = QtWidgets.QCheckBox('Somente Filial')
+        self.with_phone_number_checkbox = QtWidgets.QCheckBox('Com Contato de Telefone')
+        self.only_phone_checkbox = QtWidgets.QCheckBox('Somente Fixo')
+        self.only_smartphone_checkbox = QtWidgets.QCheckBox('Somente Celular')
+        self.with_email_checkbox = QtWidgets.QCheckBox('Com E-mail')
 
         self.options_layout = QtWidgets.QVBoxLayout()
         self.options_layout.addStretch()
@@ -181,11 +182,11 @@ class MainWindow(QtWidgets.QWidget):
         self.options_layout.addWidget(self.only_mei_checkbox)
         self.options_layout.addWidget(self.remove_mei_checkbox)
         self.options_layout.addWidget(self.only_matriz_checkbox)
-        self.options_layout.addWidget(self.only_filial)
-        self.options_layout.addWidget(self.with_phone_number)
-        self.options_layout.addWidget(self.only_phone)
-        self.options_layout.addWidget(self.only_smartphone)
-        self.options_layout.addWidget(self.with_email)
+        self.options_layout.addWidget(self.only_filial_checkbox)
+        self.options_layout.addWidget(self.with_phone_number_checkbox)
+        self.options_layout.addWidget(self.only_phone_checkbox)
+        self.options_layout.addWidget(self.only_smartphone_checkbox)
+        self.options_layout.addWidget(self.with_email_checkbox)
         self.options_layout.addStretch()
 
         self.main_layout = QtWidgets.QHBoxLayout(self)
@@ -221,12 +222,31 @@ class MainWindow(QtWidgets.QWidget):
         path = str(
             Path(self.destination_folder_input.text()).absolute() / filename
         )
+        from_opening_date = self.from_opening_date_calendar.selectedDate()
+        to_opening_date = self.to_opening_date_calendar.selectedDate()
         search_info = {
             'fantasy_name': self.fantasy_name_input.text(),
-            'juridical_nature': self.jurif,
             'cnae': self.cnae_combobox.currentText(),
+            'juridical_nature': self.juridical_nature_combobox.currentText(),
+            'registration_status': self.registration_status_combobox.currentText(),
             'state': self.state_combobox.currentText(),
             'city': self.city_combobox.currentText(),
+            'neighborhood': self.neighborhood_input.text(),
+            'cep': self.cep_input.text(),
+            'ddd': self.ddd_input.text(),
+            'from_opening_date': date(from_opening_date.year(), from_opening_date.month(), from_opening_date.day()),
+            'to_opening_date': date(to_opening_date.year(), to_opening_date.month(), to_opening_date.day()),
+            'from_share_capital': self.from_share_capital_input.text(),
+            'to_share_capital': self.to_share_capital_input.text(),
+            'includes_secondary_activity': self.includes_secondary_activity.isChecked(),
+            'only_mei': self.only_mei_checkbox.isChecked(),
+            'remove_mei': self.remove_mei_checkbox.isChecked(),
+            'only_matriz': self.only_matriz_checkbox.isChecked(),
+            'only_filial': self.only_filial_checkbox.isChecked(),
+            'with_phone_number': self.with_phone_number_checkbox.isChecked(),
+            'only_phone': self.only_phone_checkbox.isChecked(),
+            'only_smartphone': self.only_smartphone_checkbox.isChecked(),
+            'with_email': self.with_email_checkbox.isChecked(),
         }
         to_excel(path, self.browser.search(search_info))
         self.message_box.setText('Concluido!')
