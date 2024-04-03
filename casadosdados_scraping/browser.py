@@ -66,20 +66,55 @@ class Browser:
         self.driver.get(
             'https://casadosdados.com.br/solucao/cnpj/pesquisa-avancada'
         )
-        menus = self.find_elements('.dropdown-menu')
-        self.find_elements('.input.is-is-normal')[1].send_keys(
-            search_info['cnae']
-        )
-        self.click(self.find_element('.dropdown-item', element=menus[1]))
-        self.find_elements('.input.is-is-normal')[3].send_keys(
-            search_info['state']
-        )
-        self.click(self.find_element('.dropdown-item', element=menus[3]))
-        self.find_element('.input.is-normal').send_keys(search_info['city'])
-        self.click(self.find_element('.dropdown-item', element=menus[4]))
+        self.check_options(search_info)
+        self.fill_inputs(search_info)
+        self.fill_inputs_with_dropdown(search_info)
+        self.fill_date_inputs(search_info)
         self.click(self.find_element('.button.is-success'))
         urls = self.get_contacts_urls_of_page()
         return [self.get_contact_info(url) for url in urls]
+    
+    def check_options(self, search_info):
+        options = [
+            'includes_secondary_activity',
+            'only_mei',
+            'remove_mei',
+            'only_matriz',
+            'only_filial',
+            'with_phone_number',
+            'only_phone',
+            'only_smartphone',
+            'with_email',
+        ]
+        for e, option in enumerate(options):
+            if search_info[option]:
+                self.click(self.find_elements('.check')[e])
+
+    def fill_inputs(self, search_info):
+        self.find_element('.input.is-is-normal').send_keys(search_info['fantasy_name'])
+        self.find_elements('.input.is-normal')[1].send_keys(search_info['neighborhood'])
+        self.find_elements('.input.is-normal')[2].send_keys(search_info['cep'])
+        self.find_elements('.input.is-normal')[3].send_keys(search_info['ddd'])
+        self.find_element('.input.is-info').send_keys(search_info['from_share_capital'])
+        self.find_elements('.input')[11].send_keys(search_info['to_share_capital'])
+
+    def fill_inputs_with_dropdown(self, search_info):
+        infos = [
+            'cnae',
+            'juridical_nature',
+            'state'
+        ]
+        menus = self.find_elements('.dropdown-menu')
+        for e, info in enumerate(infos):
+            self.find_elements('.input.is-is-normal')[e + 1].send_keys(
+                search_info[info]
+            )
+            self.click(self.find_element('.dropdown-item', element=menus[e + 1]))
+        self.find_element('.input.is-normal').send_keys(search_info['city'])
+        self.click(self.find_element('.dropdown-item', element=menus[4]))
+
+    def fill_date_inputs(self, search_info):
+        pass
 
     def get_contacts_urls_of_page(self):
         result = []
